@@ -1,0 +1,33 @@
+{
+	"title": "Bracket Initiative",
+	"description": "Implements a reroll-every-round initiative intended for group bracketing in D&D 5e.",
+	"version": "0.1.0",
+	"compatibility": {
+		"minimum": "10"
+	},
+	"esmodules": [
+		"esmodules/bracket.js"
+	],
+	"styles": [
+		"styles/bracket.css"
+	],
+	"socket": true,
+	"id": "bracket-initiative",
+	"authors": [
+		{
+			"name": "IHaveThatPower",
+			"flags": {}
+		}
+	],
+	"relationships": {
+		"requires": [
+			{
+				"id": "lib-wrapper",
+				"type": "module",
+				"compatibility": {
+					"verified": "1.12.12.0"
+				}
+			}
+		]
+	}
+}
