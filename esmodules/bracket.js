@@ -27,28 +27,12 @@ Hooks.once("init", function() {
 		return result;
 	}, 'WRAPPER');
 	libWrapper.register(BracketInitiative.MODULE_NAME, 'CONFIG.Dice.D20Roll.prototype._onDialogSubmit', function(wrapped, html, advantageMode) {
-		const form = html[0].querySelector('form');
 		const roll = wrapped(html, advantageMode);
-		const manualInput = form.querySelector('input[name=manual]');
-		if (manualInput)
-		{
-			const explicitRoll = Number(manualInput.value);
-			if (explicitRoll && !isNaN(explicitRoll))
-			{
-				// Handle the first-term override
-				roll.terms[0].results = [{active: true, result: Number(explicitRoll)}];
-				roll.terms[0]._evaluated = true;
-				
-				// Represent it in the formula
-				let formula = roll._formula;
-				formula = formula.replace(/(1d20|2d20k.)/, explicitRoll);
-				
-				// Clean up "+ -" instances and update the formula
-				formula = formula.replaceAll('+ -', '- ');
-				roll._formula = formula;
-			}
-		}
-		return roll;
+		return BracketInitiative.patchD20RollOnDialogSubmit(roll, html);
+	}, 'WRAPPER');
+	libWrapper.register(BracketInitiative.MODULE_NAME, 'Combat.prototype._sortCombatants', function(wrapped, ...args) {
+		const originalResult = wrapped(...args); // Then just discard it.
+		return BracketInitiative.wrappedSortCombatants(...args);
 	}, 'WRAPPER');
 });
 

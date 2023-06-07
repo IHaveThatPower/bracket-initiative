@@ -442,10 +442,10 @@ export class BracketInitiative
 			}
 		}
 	}
-	
+
 	/**
 	 * Enhance the roll dialog specifically for initiative rolls
-	 * 
+	 *
 	 * @param
 	 * @param
 	 * @param
@@ -453,12 +453,11 @@ export class BracketInitiative
 	 */
 	static async enhanceInitiativeDialog(dialog, $html, appData)
 	{
-		console.log(dialog);
 		const html = $html[0];
 		const { title } = dialog.data;
 		const initiativeText = game.i18n.localize('DND5E.InitiativeRoll');
 		if (!title.includes(initiativeText)) return;
-		
+
 		// Inject manual roll field
 		const manualRollContainer = document.createElement('div');
 		manualRollContainer.classList.add('form-group');
@@ -474,5 +473,60 @@ export class BracketInitiative
 		const bonusContainer = html.querySelector('form').querySelector('input[name=bonus]').parentNode;
 		html.querySelector('form').insertBefore(manualRollContainer, bonusContainer.nextSibling);
 		html.style.height = 'auto';
+	}
+
+	/**
+	 * Patch the normal _onDialogSubmit method of D20Roll
+	 *
+	 * @param
+	 * @param
+	 * @return	D20Roll instance
+	 */
+	static patchD20RollOnDialogSubmit(roll, html)
+	{
+		const form = html[0].querySelector('form');
+		const manualInput = form.querySelector('input[name=manual]');
+		if (manualInput)
+		{
+			const explicitRoll = Number(manualInput.value);
+			if (explicitRoll && !isNaN(explicitRoll))
+			{
+				// Handle the first-term override
+				roll.terms[0].results = [{active: true, result: Number(explicitRoll)}];
+				roll.terms[0]._evaluated = true;
+
+				// Represent it in the formula
+				let formula = roll._formula;
+				formula = formula.replace(/(1d20|2d20k.)/, explicitRoll);
+
+				// Clean up "+ -" instances and update the formula
+				formula = formula.replaceAll('+ -', '- ');
+				roll._formula = formula;
+			}
+		}
+		return roll;
+	}
+
+	/**
+	 * Patch the combatant sorting so that NPCs are always sorted after
+	 * PCs and we otherwise sort alphabetically by combatant name.
+	 *
+	 * @param
+	 * @param
+	 * @return
+	 */
+	static wrappedSortCombatants(a, b)
+	{
+		const ia = Number.isNumeric(a.initiative) ? a.initiative : -Infinity;
+		const ib = Number.isNumeric(b.initiative) ? b.initiative : -Infinity;
+		if ((ib - ia) == 0)
+		{
+			if (a.isNPC && !b.isNPC)
+				return 1;
+			if (!a.isNPC && b.isNPC)
+				return -1;
+			return (a.name > b.name ? 1 : -1);
+		}
+		return (ib - ia);
 	}
 }
