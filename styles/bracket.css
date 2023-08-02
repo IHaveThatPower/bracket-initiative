@@ -1,50 +1,75 @@
-form.bracketInitiative .hidden { display: none; }
-form.bracketInitiative input[type=checkbox] { width: 1rem; height: 1rem; margin: 0;}
-form.bracketInitiative section
+:root
 {
-	display: grid;
-	border: 2px groove #eee;
-	margin: 0.1rem;
-	padding-left: 0.2rem;
-	padding-right: 0.2rem;
-	gap: 0.2rem;
-	grid-template-columns: 6rem auto 6rem auto;
-	align-items: center;
-}
-form.bracketInitiative section.span
-{
-	display: grid;
-	border: 2px groove #eee;
-	margin: 0.1rem;
-	padding-left: 0.2rem;
-	padding-right: 0.2rem;
-	gap: 0.2rem;
-	grid-template-columns: 6rem auto;
-	align-items: center;
-}
-form.bracketInitiative div.helperText
-{
-	grid-column: span 2;
-	font-size: 85%;
-	font-style: italic;
-	opacity: 75%;
-}
-li.combatant div.sfi-action-row
-{
+	--color-bracket-odd-solid: #b8860b; /* darkgoldenrod */
+	--color-bracket-odd-transparent: #b8860b24;
+	--color-bracket-even-solid: #c0c0c0; /* silver */
+	--color-bracket-even-transparent: #c0c0c024;
 	/*
-	flex-grow: 0;
-	flex-shrink: 0;
-	flex-basis: 0.9rem;
+	--color-bracket-odd-active-transparent: color-mix(
+		in srgb,
+		var(--color-bracket-odd-transparent),
+		rgba(255, 255, 255, 0.1)
+	);
+	--color-bracket-even-active-transparent: color-mix(
+		in srgb,
+		var(--color-bracket-even-transparent),
+		rgba(255, 255, 255, 0.1)
+	);
 	*/
-	display: inline-block;
-	line-height: .9rem;
-	margin-bottom: 0.2rem;
-	margin-left: 0.2rem;
-	font-style: italic;
-	color: orange;
-	font-size: 90%;
+	--color-bracket-odd-active-transparent: var(--color-bracket-odd-transparent);
+	--color-bracket-even-active-transparent: var(--color-bracket-even-transparent);
 }
-li.combatant div.sfi-action-chosen
+
+li.combatant.bracket-odd,
+li.combatant.bracket-even
 {
-	color: limegreen;
+	border-width: 2px;
+	border-style: solid;
+	border-bottom-width: 0;
+}
+li.combatant.directory-item:last-child
+{
+	border-bottom-width: 2px;
+}
+li.combatant.bracket-odd.directory-item
+{
+	background: var(--color-bracket-odd-transparent);
+}
+li.combatant.bracket-even.directory-item
+{
+	background: var(--color-bracket-even-transparent);
+}
+/* For the borders, we actually want slightly _less_ specificity */
+li.combatant.bracket-odd
+{
+	border-color: var(--color-bracket-odd-solid);
+}
+li.combatant.bracket-even
+{
+	border-color: var(--color-bracket-even-solid);
+}
+li.combatant.bracket-odd.directory-item.active
+{
+	background: var(--color-bracket-odd-active-transparent);
+}
+li.combatant.bracket-even.directory-item.active
+{
+	background: var(--color-bracket-even-active-transparent);
+}
+li.combatant.active.directory-item
+{
+	border-top-width: 1px;
+	border-bottom-width: 1px;
+}
+/* No top border on same-bracket combatants */
+li.combatant.bracket-odd+li.combatant.bracket-odd:not(.active),
+li.combatant.bracket-even+li.combatant.bracket-even:not(.active)
+{
+	border-top-width: 0;
+}
+/* Top border on different-bracket combatants */
+li.combatant.bracket-even+li.combatant.bracket-odd,
+li.combatant.bracket-odd+li.combatant.bracket-even
+{
+	border-top-width: 2px;
 }

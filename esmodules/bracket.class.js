@@ -125,7 +125,7 @@ export class BracketInitiative
 		// Scan combatants for followers and update accordingly
 		for (let combatant of game.combats.active.combatants)
 		{
-			self.updateFollowers(combatant.id);
+			self.checkForFollowUpdates(combatant.id);
 		}
 	}
 
@@ -178,7 +178,7 @@ export class BracketInitiative
 				self.debug("Followed combatant", followedName, "is not in this combat");
 				return false;
 			}
-			else if (Number(followed[0].initiative) != "NaN" && followed[0].initiative != null)
+			else if (!isNaN(Number(followed[0].initiative)) && followed[0].initiative != null)
 			{
 				self.debug("Overriding initiative with that of followed combatant");
 				await combatant.update({'initiative': followed[0].initiative});
@@ -229,6 +229,38 @@ export class BracketInitiative
 	}
 
 	/**
+	 * Patch the normal _onDialogSubmit method of D20Roll
+	 *
+	 * @param
+	 * @param
+	 * @return	D20Roll instance
+	 */
+	static patchD20RollOnDialogSubmit(roll, html)
+	{
+		const form = html[0].querySelector('form');
+		const manualInput = form.querySelector('input[name=manual]');
+		if (manualInput)
+		{
+			const explicitRoll = Number(manualInput.value);
+			if (explicitRoll && !isNaN(explicitRoll))
+			{
+				// Handle the first-term override
+				roll.terms[0].results = [{active: true, result: Number(explicitRoll)}];
+				roll.terms[0]._evaluated = true;
+
+				// Represent it in the formula
+				let formula = roll._formula;
+				formula = formula.replace(/(1d20|2d20k.)/, explicitRoll);
+
+				// Clean up "+ -" instances and update the formula
+				formula = formula.replaceAll('+ -', '- ');
+				roll._formula = formula;
+			}
+		}
+		return roll;
+	}
+
+	/**
 	 * Enhance the roll dialog specifically for initiative rolls
 	 *
 	 * @param
@@ -261,34 +293,37 @@ export class BracketInitiative
 	}
 
 	/**
-	 * Patch the normal _onDialogSubmit method of D20Roll
+	 * For the GM, enhance the combat tracker to clearly dilineate
+	 * brackets.
 	 *
 	 * @param
-	 * @param
-	 * @return	D20Roll instance
+	 * @return	void
 	 */
-	static patchD20RollOnDialogSubmit(roll, html)
+	static enhanceCombatTracker(html)
 	{
-		const form = html[0].querySelector('form');
-		const manualInput = form.querySelector('input[name=manual]');
-		if (manualInput)
+		// Only GMs see this
+		if (!game.user.isGM)
+			return;
+		const combatantItems = html[0].querySelectorAll('li.combatant');
+		const bracketSets = ['bracket-odd', 'bracket-even'];
+		let currentBracketSet;
+		let lastHadPlayerOwner = false;
+		for (let c of combatantItems)
 		{
-			const explicitRoll = Number(manualInput.value);
-			if (explicitRoll && !isNaN(explicitRoll))
+			const combatantId = c.dataset.combatantId;
+			const combatant = game.combats.active.combatants.get(combatantId);
+			if (
+				(combatant.hasPlayerOwner && !lastHadPlayerOwner) ||
+				(!combatant.hasPlayerOwner && lastHadPlayerOwner)
+			)
 			{
-				// Handle the first-term override
-				roll.terms[0].results = [{active: true, result: Number(explicitRoll)}];
-				roll.terms[0]._evaluated = true;
-
-				// Represent it in the formula
-				let formula = roll._formula;
-				formula = formula.replace(/(1d20|2d20k.)/, explicitRoll);
-
-				// Clean up "+ -" instances and update the formula
-				formula = formula.replaceAll('+ -', '- ');
-				roll._formula = formula;
+				if (isNaN(Number(currentBracketSet)))
+					currentBracketSet = 0;
+				else
+					currentBracketSet = Math.abs(currentBracketSet - 1);
+				lastHadPlayerOwner = combatant.hasPlayerOwner;
 			}
+			c.classList.add(bracketSets[currentBracketSet]);
 		}
-		return roll;
 	}
 }

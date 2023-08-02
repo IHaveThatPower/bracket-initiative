@@ -1,9 +1,10 @@
 {
 	"title": "Bracket Initiative",
 	"description": "Implements a reroll-every-round initiative intended for group bracketing in D&D 5e.",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"compatibility": {
-		"minimum": "10"
+		"minimum": "10",
+		"verified": "11.306"
 	},
 	"esmodules": [
 		"esmodules/bracket.js"

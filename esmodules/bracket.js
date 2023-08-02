@@ -80,3 +80,7 @@ Hooks.on("updateCombatant", (combatant, update, diff, id) => {
 Hooks.on("renderDialog", (dialog, $html, appData) => {
 	BracketInitiative.enhanceInitiativeDialog(dialog, $html, appData);
 });
+
+Hooks.on("renderCombatTracker", (tracker, html, data) => {
+	BracketInitiative.enhanceCombatTracker(html);
+});
