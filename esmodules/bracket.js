@@ -39,7 +39,7 @@ Hooks.once("ready", function() {
 
 	if (game.combats.active)
 	{
-		BracketInitiative.debug("Active combat detected; activating BracketInitiative socket");
+		BracketInitiative.log("Active combat detected; activating BracketInitiative socket");
 		game.socket.on(BracketInitiative.SOCKET_NAME, BracketInitiative.handleUpdate);
 	}
 });
@@ -48,7 +48,7 @@ Hooks.once("ready", function() {
  * When a combat is created, activate our socket!
  */
 Hooks.on("createCombat", () => {
-	BracketInitiative.debug("New combat detected; activating BracketInitiative socket");
+	BracketInitiative.log("New combat detected; activating BracketInitiative socket");
 	game.socket.on(BracketInitiative.SOCKET_NAME, BracketInitiative.handleUpdate);
 });
 
@@ -56,7 +56,7 @@ Hooks.on("createCombat", () => {
  * Turn our socket off when combat ends.
  */
 Hooks.on("deleteCombat", () => {
-	BracketInitiative.debug("Dectivating BracketInitiative socket");
+	BracketInitiative.log("Dectivating BracketInitiative socket");
 	game.socket.off(BracketInitiative.SOCKET_NAME);
 });
 

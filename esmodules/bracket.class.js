@@ -5,17 +5,20 @@ export class BracketInitiative
 
 	static FLAG_ROLL_RESULT = 'roll-result';
 
+	static log = window.console.log.bind(window.console, "BracketInitiative | ");
+	static error = window.console.error.bind(window.console, "BracketInitiative | ");
+
 	/**
 	 * Helper for printing diagnostic messages, if enabled
 	 *
 	 * @param	mixed
 	 * @return	void
 	 */
-	static debug()
+	static get debug()
 	{
-		const self = BracketInitiative;
 		if (CONFIG.debug.BracketInitiative)
-			console.log("BracketInitiative |", arguments);
+			return true;
+		return false;
 	}
 
 	/**
@@ -34,7 +37,7 @@ export class BracketInitiative
 
 		if (payload?.type === 'initiative')
 		{
-			self.debug(payload);
+			if (self.debug) self.log(payload);
 			if (payload?.combatant)
 				self.checkForFollowUpdates(payload.combatant);
 		}
@@ -73,21 +76,21 @@ export class BracketInitiative
 	static async handleCombatantEvent(combatant, update)
 	{
 		const self = BracketInitiative;
-		self.debug("Handling Combatant Event");
+		if (self.debug) self.log("Handling Combatant Event");
 		// If the update didn't pertain to initiative, we don't care
 		if (!update?.hasOwnProperty('initiative'))
 		{
-			self.debug("Non-initiative update; we don't care", update);
+			if (self.debug) self.log("Non-initiative update; we don't care", update);
 			return;
 		}
 
 		// If the update was to clear out initiative, don't fight with it
 		if (update.intiative == 'undefined' || update.initiative == null)
 		{
-			self.debug("Initiative update was a reset; leaving alone");
+			if (self.debug) self.log("Initiative update was a reset; leaving alone");
 			return;
 		}
-		self.debug(update);
+		if (self.debug) self.log(update);
 
 		self.handleUpdate({
 			type: 'initiative',
@@ -142,14 +145,14 @@ export class BracketInitiative
 		const self = BracketInitiative;
 		if (!game.combats.active || !combatantId)
 		{
-			self.debug("No combats active, or combatantId not supplied");
-			self.debug(combatantId);
+			if (self.debug) self.log("No combats active, or combatantId not supplied");
+			if (self.debug) self.log(combatantId);
 			return false;
 		}
 		const combatant = game.combats.active.combatants.get(combatantId);
 		if (!combatant)
 		{
-			self.debug("Combatant not found");
+			if (self.debug) self.log("Combatant not found");
 			return false;
 		}
 
@@ -175,19 +178,19 @@ export class BracketInitiative
 			const followed = game.combats.active.combatants.filter(c => c.name == followedName);
 			if (!followed || followed.length == 0)
 			{
-				self.debug("Followed combatant", followedName, "is not in this combat");
+				if (self.debug) self.log("Followed combatant", followedName, "is not in this combat");
 				return false;
 			}
 			else if (!isNaN(Number(followed[0].initiative)) && followed[0].initiative != null)
 			{
-				self.debug("Overriding initiative with that of followed combatant");
+				if (self.debug) self.log("Overriding initiative with that of followed combatant");
 				await combatant.update({'initiative': followed[0].initiative});
 				return true;
 			}
-			self.debug("Followed combatant", followedName, "doesn't yet have a valid initiative");
+			if (self.debug) self.log("Followed combatant", followedName, "doesn't yet have a valid initiative");
 			return false;
 		}
-		self.debug("Not following anyone");
+		if (self.debug) self.log("Not following anyone");
 		return false;
 	}
 
@@ -212,7 +215,7 @@ export class BracketInitiative
 					self.checkForFollowUpdates(f.id);
 			}
 		}
-		self.debug("No followers");
+		if (self.debug) self.log("No followers");
 	}
 
 	/**
