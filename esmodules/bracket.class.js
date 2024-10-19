@@ -63,6 +63,12 @@ export class BracketInitiative
 		if (eventType == "round")
 		{
 			await combat.resetAll();
+			// Clear out any existing bracket flags
+			for (let c of game.combats.active.combatants)
+			{
+				if (c?.getFlag(self.MODULE_NAME, 'bracket'))
+					c.actor.setFlag(self.MODULE_NAME, 'bracket', -1);
+			}
 		}
 	}
 
@@ -240,6 +246,7 @@ export class BracketInitiative
 	 */
 	static patchD20RollOnDialogSubmit(roll, html)
 	{
+		const self = BracketInitiative;
 		const form = html[0].querySelector('form');
 		const manualInput = form.querySelector('input[name=manual]');
 		if (manualInput)
@@ -273,6 +280,7 @@ export class BracketInitiative
 	 */
 	static async enhanceInitiativeDialog(dialog, $html, appData)
 	{
+		const self = BracketInitiative;
 		const html = $html[0];
 		const { title } = dialog.data;
 		const initiativeText = game.i18n.localize('DND5E.InitiativeRoll');
@@ -304,29 +312,164 @@ export class BracketInitiative
 	 */
 	static enhanceCombatTracker(html)
 	{
-		// Only GMs see this
-		if (!game.user.isGM)
-			return;
-		const combatantItems = html[0].querySelectorAll('li.combatant');
-		const bracketSets = ['bracket-odd', 'bracket-even'];
-		let currentBracketSet;
-		let lastHadPlayerOwner = false;
-		for (let c of combatantItems)
+		const self = BracketInitiative;
+		const combatants = game?.combats?.active?.combatants || [];
+		if (!combatants?.contents || combatants?.contents?.length == 0)
+			return; // Nothing to do
+
+		// Get the sorted list of combatant IDs
+		const sortedCombatants = combatants.filter(
+			c => c.initiative || false
+		)?.sort(
+			(a, b) => self.combatantSort(a, b)
+		)?.map(c => { const cObj = {'id': c.id, 'initiative': c.initiative, 'bracket': -1}; return cObj }) || [];
+		if (self.debug)
+			self.log(sortedCombatants);
+		if (!sortedCombatants || sortedCombatants.length == 0)
+			return; // Nothing to do
+
+		// Determine brackets
+		let lastWasAlly = self.isPlayerAlly(combatants.get(sortedCombatants[0].id));
+		let currentBracket = 0;
+		for (let i = 0; i < sortedCombatants.length; i++)
 		{
-			const combatantId = c.dataset.combatantId;
-			const combatant = game.combats.active.combatants.get(combatantId);
+			const combatantId = sortedCombatants[i].id;
+			const combatant = combatants.get(combatantId);
 			if (
-				(combatant.hasPlayerOwner && !lastHadPlayerOwner) ||
-				(!combatant.hasPlayerOwner && lastHadPlayerOwner)
+				self.isPlayerAlly(combatant) && !lastWasAlly ||
+				!self.isPlayerAlly(combatant) && lastWasAlly
 			)
 			{
-				if (isNaN(Number(currentBracketSet)))
-					currentBracketSet = 0;
-				else
-					currentBracketSet = Math.abs(currentBracketSet - 1);
-				lastHadPlayerOwner = combatant.hasPlayerOwner;
+				currentBracket++;
+			}
+			sortedCombatants[i].bracket = currentBracket;
+			lastWasAlly = false;
+			if (self.isPlayerAlly(combatant))
+				lastWasAlly = true;
+		}
+		if (self.debug)
+			self.log(sortedCombatants);
+
+		// Indicate brackets
+		const combatantItems = html[0].querySelectorAll('li.combatant');
+		const bracketSets = ['bracket-odd', 'bracket-even'];
+		const bracketTeam = ['player-combatant', 'npc-combatant'];
+		let currentBracketSet = 0;
+		let lastBracket = -1;
+		let lastCombatant = Array.from(combatantItems).filter(c => { return (sortedCombatants.filter(sc => sc.id == c.dataset.combatantId)[0]?.bracket > -1); }).pop();
+		for (let c of combatantItems)
+		{
+			const combatantId = c.dataset.combatantId;	
+			const bracketCombatant = sortedCombatants.filter(c => c.id == combatantId)[0];
+			if (!bracketCombatant)
+			{
+				if (self.debug) self.log("Displayed combatant",combatantId,"not in the active combatants list");
+				c.classList.add('needs-roll');
+				continue;
+			}
+			
+			// Handle bracket grouping
+			if (lastBracket == -1)
+			{
+				lastBracket = bracketCombatant.bracket;
+				// If brackets exist before this one, bad guys go first!
+				if (lastBracket !== sortedCombatants[0].bracket && !game.user.isGM)
+					self.hereBeBadGuys(c);
+			}
+			// If the last bracket we checked isn't the same as this
+			// displayed combatant's bracket, bad guys went before!
+			if (lastBracket != bracketCombatant.bracket)
+			{
+				currentBracketSet = Math.abs(currentBracketSet - 1);
+				// For players, insert text
+				if (!game.user.isGM)
+					self.hereBeBadGuys(c);
 			}
 			c.classList.add(bracketSets[currentBracketSet]);
+			
+			// Handle character type
+			if (combatants.get(combatantId).hasPlayerOwner)
+				c.classList.add(bracketTeam[0]);
+			else
+				c.classList.add(bracketTeam[1]);
+			// Update last bracket
+			lastBracket = bracketCombatant.bracket;
 		}
+		// If there are further brackets than lastBracket, we've got
+		// bad guys at the end!
+		if (sortedCombatants && sortedCombatants[sortedCombatants.length - 1].bracket !== lastBracket && lastCombatant)
+			self.hereBeBadGuys(lastCombatant, true);
+	}
+	
+	/**
+	 * Sort a given set of combatant pseudo-objects
+	 * 
+	 * @param	a
+	 * @param	b
+	 * @return	int
+	 */
+	static combatantSort(a, b)
+	{
+		const self = BracketInitiative;
+
+		// Initiative supersedes
+		if (a.initiative > b.initiative) return -1; 
+		if (b.initiative > a.initiative) return 1;
+
+		// Allies supersede enemies
+		if (self.isPlayerAlly(a) && !self.isPlayerAlly(b)) return -1;
+		if (self.isPlayerAlly(b) && !self.isPlayerAlly(a)) return 1;
+		
+		// Players supersede NPCs
+		if (a.hasPlayerOwner && !b.hasPlayerOwner) return -1;
+		if (b.hasPlayerOwner && !a.hasPlayerOwner) return 1;
+
+		// Dex score supersedes
+		const aDex = a.actor?.system?.abilities?.dex?.value;
+		const bDex = b.actor?.system?.abilities?.dex?.value;
+		if (aDex > bDex) return -1;
+		if (aDex < bDex) return 1;
+
+		// Name supersedes
+		if (a.name < b.name) return -1;
+		if (b.name < a.name) return 1;
+		return 0;
+	}
+	
+	/**
+	 * Determine whether or not a combatant is an ally of the players
+	 * 
+	 * @param	c
+	 * @return	bool
+	 */
+	static isPlayerAlly(c)
+	{
+		// Players are allies
+		if (c.hasPlayerOwner)
+			return true;
+		// NPC combatants with "friendly" tokens are allies
+		if (c.token?.disposition == 1)
+			return true;
+		
+		// Everybody else is not an ally
+		return false;
+	}
+	
+	/**
+	 * Add the "here be bad guys" text at the indicated position
+	 * 
+	 * @param DOMElement c  The element BEFORE which to insert the bad
+	 *                      guy marker.
+	 * @param bool after    Add the element AFTER instead
+	 * @return void
+	 */
+	static hereBeBadGuys(c, after = false)
+	{
+		const divider = document.createElement('li');
+		divider.classList.add('directory-item');
+		divider.classList.add('flexrow');
+		divider.classList.add('bracket-divider');
+		divider.innerHTML = "... here be bad guys ...";
+		c.parentNode.insertBefore(divider, (after ? c.nextSibling : c));
 	}
 }
