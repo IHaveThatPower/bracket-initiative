@@ -19,14 +19,48 @@ Hooks.once("init", function() {
 		return result;
 	}, 'WRAPPER');
 
-	// Hook the D20Roll modifier
-	libWrapper.register(BracketInitiative.MODULE_NAME, 'CONFIG.Dice.D20Roll.prototype._onDialogSubmit', function(wrapped, html, advantageMode) {
-		const roll = wrapped(html, advantageMode);
-		return BracketInitiative.patchD20RollOnDialogSubmit(roll, html);
-	}, 'WRAPPER');
+	// Hook the D20Roll modifier 
+	// Old pre-v4.1
+	if (!!CONFIG.Dice.D20Roll.prototype._onDialogSubmit)
+	{
+		libWrapper.register(BracketInitiative.MODULE_NAME, 'CONFIG.Dice.D20Roll.prototype._onDialogSubmit', function(wrapped, html, advantageMode) {
+			const roll = wrapped(html, advantageMode);
+			const form = html[0].querySelector('form');
+			const manualInput = form.querySelector('input[name=manual]');
+			if (manualInput)
+			{
+				const explicitRoll = Number(manualInput.value);
+				if (explicitRoll && !isNaN(explicitRoll))
+				{
+					return BracketInitiative.patchInitiative(roll);
+				}
+			}
+			return roll;
+		}, 'WRAPPER');
+	}
 
 	// Setup our debug property
 	CONFIG.debug.BracketInitiative = false;
+});
+
+/**
+ * Patch initiative rolling, v4.1+
+ */
+// Inject our manually-entered resulst as an option on the roll config
+Hooks.on("dnd5e.buildRollConfig", function(dialog, config, formData) {
+	if (!!config && !!formData)
+	{
+		const manualResult = Number(formData.object.manual);
+		if (!isNaN(manualResult))
+		{
+			// TODO: Implement with flags?
+			config.options.manualResult = manualResult;
+		}
+	}
+});
+// Patch the actual initiative roll before it gets rolled
+Hooks.on("dnd5e.preRollInitiative", (actor, roll) => {
+	roll = BracketInitiative.patchInitiativeRoll(roll);
 });
 
 /**
@@ -77,8 +111,13 @@ Hooks.on("updateCombatant", (combatant, update, diff, id) => {
 	BracketInitiative.handleCombatantEvent(combatant, update);
 });
 
+/* Old pre-v4.1 */
 Hooks.on("renderDialog", (dialog, $html, appData) => {
-	BracketInitiative.enhanceInitiativeDialog(dialog, $html, appData);
+	BracketInitiative.enhanceLegacyInitiativeDialog(dialog, $html, appData);
+});
+/* New for v4.1 */
+Hooks.on("renderD20RollConfigurationDialog", (roll, dialog) => {
+	BracketInitiative.enhanceInitiativeDialog(roll, dialog);
 });
 
 Hooks.on("renderCombatTracker", (tracker, html, data) => {

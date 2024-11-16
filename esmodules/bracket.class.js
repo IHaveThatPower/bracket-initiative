@@ -238,47 +238,42 @@ export class BracketInitiative
 	}
 
 	/**
-	 * Patch the normal _onDialogSubmit method of D20Roll
+	 * Patch an initiative roll
 	 *
-	 * @param
 	 * @param
 	 * @return	D20Roll instance
 	 */
-	static patchD20RollOnDialogSubmit(roll, html)
+	static patchInitiativeRoll(roll)
 	{
 		const self = BracketInitiative;
-		const form = html[0].querySelector('form');
-		const manualInput = form.querySelector('input[name=manual]');
-		if (manualInput)
+		if (roll.options.manualResult)
 		{
-			const explicitRoll = Number(manualInput.value);
-			if (explicitRoll && !isNaN(explicitRoll))
-			{
-				// Handle the first-term override
-				roll.terms[0].results = [{active: true, result: Number(explicitRoll)}];
-				roll.terms[0]._evaluated = true;
+			const explicitRoll =  Number(roll.options.manualResult);
+			// Handle the first-term override
+			roll.terms[0] = new CONFIG.Dice.D20Die();
+			roll.terms[0].results = [{active: true, result: explicitRoll}];
+			roll.terms[0]._evaluated = true;
 
-				// Represent it in the formula
-				let formula = roll._formula;
-				formula = formula.replace(/(1d20|2d20k.)/, explicitRoll);
+			// Represent it in the formula
+			let formula = roll._formula;
+			formula = formula.replace(/(1d20|2d20k.)/, explicitRoll);
 
-				// Clean up "+ -" instances and update the formula
-				formula = formula.replaceAll('+ -', '- ');
-				roll._formula = formula;
-			}
+			// Clean up "+ -" instances and update the formula
+			formula = formula.replaceAll('+ -', '- ');
+			roll._formula = formula;
 		}
 		return roll;
 	}
 
 	/**
-	 * Enhance the roll dialog specifically for initiative rolls
+	 * Enhance the pre-v4.1 roll dialog specifically for initiative rolls
 	 *
 	 * @param
 	 * @param
 	 * @param
 	 * @return	void
 	 */
-	static async enhanceInitiativeDialog(dialog, $html, appData)
+	static async enhanceLegacyInitiativeDialog(dialog, $html, appData)
 	{
 		const self = BracketInitiative;
 		const html = $html[0];
@@ -287,20 +282,66 @@ export class BracketInitiative
 		if (!title.includes(initiativeText)) return;
 
 		// Inject manual roll field
+		const manualRollContainer = self.createInitiativeDialogManualInput();
+		const bonusContainer = html.querySelector('form').querySelector('input[name=bonus]').parentNode;
+		html.querySelector('form').insertBefore(manualRollContainer, bonusContainer.nextSibling);
+		html.style.height = 'auto';
+	}
+
+	/**
+	 * Enhance the v4.1+ roll dialog specifically for initiative rolls
+	 *
+	 * @param
+	 * @param
+	 * @return	void
+	 */
+	static async enhanceInitiativeDialog(roll, dialog)
+	{
+		const self = BracketInitiative;
+		const html = dialog;
+		const formGroupID = self.MODULE_NAME + '_manual-roll-group';
+		// Avoid multiple adds
+		if (html.querySelector('#' + formGroupID))
+			return;
+
+		// Inject manual roll field
+		const manualRollContainer = self.createInitiativeDialogManualInput();
+		const firstFieldSetFormGroup = html.querySelector('form').querySelector('fieldset .form-group');
+		html.querySelector('form').querySelector('fieldset').insertBefore(manualRollContainer, firstFieldSetFormGroup);
+		html.style.height = 'auto';
+	}
+	
+	/**
+	 * Create an extra dialog field on the initiative dialog.
+	 * This method is called by the method responsible for inserting
+	 * the new field, depending on which version of dnd5e is being used
+	 */
+	static createInitiativeDialogManualInput()
+	{
+		// Form Group container
 		const manualRollContainer = document.createElement('div');
 		manualRollContainer.classList.add('form-group');
+		manualRollContainer.id = formGroupID;
+
+		// Field label
 		const manualRollLabel = document.createElement('label');
 		manualRollLabel.innerHTML = 'Raw Manual Roll';
 		manualRollContainer.append(manualRollLabel);
+
+		// Wrapper element
+		const manualRollFieldWrapper = document.createElement('div');
+		manualRollFieldWrapper.classList.add('form-fields');
+		manualRollContainer.append(manualRollFieldWrapper);
+
+		// Input element
 		const manualRollInput = document.createElement('input');
 		manualRollInput.setAttribute('type', 'text');
 		manualRollInput.setAttribute('name', 'manual');
 		manualRollInput.setAttribute('placeholder', 'Optional: physical die roll, no mods');
 		manualRollInput.setAttribute('title', "If desired, input the result of your physical die roll here.\nDo not include any modifiers; Foundry will add those, or use the field above.");
-		manualRollContainer.append(manualRollInput);
-		const bonusContainer = html.querySelector('form').querySelector('input[name=bonus]').parentNode;
-		html.querySelector('form').insertBefore(manualRollContainer, bonusContainer.nextSibling);
-		html.style.height = 'auto';
+		manualRollFieldWrapper.append(manualRollInput);
+
+		return manualRollContainer;
 	}
 
 	/**
