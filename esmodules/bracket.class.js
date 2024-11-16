@@ -319,7 +319,7 @@ export class BracketInitiative
 
 		// Get the sorted list of combatant IDs
 		const sortedCombatants = combatants.filter(
-			c => c.initiative || false
+			c => (c.initiative != null)
 		)?.sort(
 			(a, b) => self.combatantSort(a, b)
 		)?.map(c => { const cObj = {'id': c.id, 'initiative': c.initiative, 'bracket': -1}; return cObj }) || [];
@@ -327,6 +327,9 @@ export class BracketInitiative
 			self.log(sortedCombatants);
 		if (!sortedCombatants || sortedCombatants.length == 0)
 			return; // Nothing to do
+
+		// Clear existing "Here Be Bad Guys"
+		html[0].querySelectorAll('bracket-divider').forEach(d => d.remove());
 
 		// Determine brackets
 		let lastWasAlly = self.isPlayerAlly(combatants.get(sortedCombatants[0].id));
@@ -359,7 +362,7 @@ export class BracketInitiative
 		let lastCombatant = Array.from(combatantItems).filter(c => { return (sortedCombatants.filter(sc => sc.id == c.dataset.combatantId)[0]?.bracket > -1); }).pop();
 		for (let c of combatantItems)
 		{
-			const combatantId = c.dataset.combatantId;	
+			const combatantId = c.dataset.combatantId;
 			const bracketCombatant = sortedCombatants.filter(c => c.id == combatantId)[0];
 			if (!bracketCombatant)
 			{
