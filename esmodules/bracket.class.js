@@ -305,7 +305,7 @@ export class BracketInitiative
 			return;
 
 		// Inject manual roll field
-		const manualRollContainer = self.createInitiativeDialogManualInput();
+		const manualRollContainer = self.createInitiativeDialogManualInput(formGroupID);
 		const firstFieldSetFormGroup = html.querySelector('form').querySelector('fieldset .form-group');
 		html.querySelector('form').querySelector('fieldset').insertBefore(manualRollContainer, firstFieldSetFormGroup);
 		html.style.height = 'auto';
@@ -315,8 +315,11 @@ export class BracketInitiative
 	 * Create an extra dialog field on the initiative dialog.
 	 * This method is called by the method responsible for inserting
 	 * the new field, depending on which version of dnd5e is being used
+	 * 
+	 * @param
+	 * @return	DOMElement
 	 */
-	static createInitiativeDialogManualInput()
+	static createInitiativeDialogManualInput(formGroupID)
 	{
 		// Form Group container
 		const manualRollContainer = document.createElement('div');
