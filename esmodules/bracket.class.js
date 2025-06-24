@@ -276,7 +276,7 @@ export class BracketInitiative
 	static async enhanceLegacyInitiativeDialog(dialog, $html, appData)
 	{
 		const self = BracketInitiative;
-		const html = $html[0];
+		const html = $html;
 		const { title } = dialog.data;
 		const initiativeText = game.i18n.localize('DND5E.InitiativeRoll');
 		if (!title.includes(initiativeText)) return;
@@ -373,7 +373,7 @@ export class BracketInitiative
 			return; // Nothing to do
 
 		// Clear existing "Here Be Bad Guys"
-		html[0].querySelectorAll('bracket-divider').forEach(d => d.remove());
+		html.querySelectorAll('bracket-divider').forEach(d => d.remove());
 
 		// Determine brackets
 		let lastWasAlly = self.isPlayerAlly(combatants.get(sortedCombatants[0].id));
@@ -398,7 +398,7 @@ export class BracketInitiative
 			self.log(sortedCombatants);
 
 		// Indicate brackets
-		const combatantItems = html[0].querySelectorAll('li.combatant');
+		const combatantItems = html.querySelectorAll('li.combatant');
 		const bracketSets = ['bracket-odd', 'bracket-even'];
 		const bracketTeam = ['player-combatant', 'npc-combatant'];
 		let currentBracketSet = 0;

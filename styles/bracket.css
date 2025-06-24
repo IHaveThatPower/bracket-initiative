@@ -10,72 +10,72 @@
 	--color-bracket-npc-active-transparent: var(--color-bracket-npc-transparent);
 }
 
-#combat-tracker li.combatant.bracket-odd,
-#combat-tracker li.combatant.bracket-even,
-#combat-tracker li.combatant.needs-roll
+.combat-tracker li.combatant.bracket-odd,
+.combat-tracker li.combatant.bracket-even,
+.combat-tracker li.combatant.needs-roll
 {
 	border-width: 2px;
 	border-style: solid;
 	border-bottom-width: 0;
 }
-#combat-tracker li.combatant.directory-item:last-child,
-#combat-tracker li.combatant.bracket-even:has(+li:not(.bracket-even)),
-#combat-tracker li.combatant.bracket-odd:has(+li:not(.bracket-odd))
+.combat-tracker li.combatant.directory-item:last-child,
+.combat-tracker li.combatant.bracket-even:has(+li:not(.bracket-even)),
+.combat-tracker li.combatant.bracket-odd:has(+li:not(.bracket-odd))
 {
 	border-bottom-width: 2px;
 }
-#combat-tracker li.combatant.player-combatant.directory-item
+.combat-tracker li.combatant.player-combatant.directory-item
 {
 	background: var(--color-bracket-pc-transparent);
 }
-#combat-tracker li.combatant.npc-combatant.directory-item
+.combat-tracker li.combatant.npc-combatant.directory-item
 {
 	background: var(--color-bracket-npc-transparent);
 }
 /* For the borders, we actually want slightly _less_ specificity */
-#combat-tracker li.combatant.player-combatant
+.combat-tracker li.combatant.player-combatant
 {
 	border-color: var(--color-bracket-pc-solid);
 	border-bottom-color: var(--color-bracket-pc-solid) !important;
 }
-#combat-tracker li.combatant.npc-combatant
+.combat-tracker li.combatant.npc-combatant
 {
 	border-color: var(--color-bracket-npc-solid);
 	border-bottom-color: var(--color-bracket-npc-solid) !important;
 }
-#combat-tracker li.combatant.needs-roll
+.combat-tracker li.combatant.needs-roll
 {
 	background: var(--color-needs-roll-transparent);
 	border-color: var(--color-needs-roll-solid);
 	border-bottom-color: var(--color-needs-roll-solid) !important;
 }
-#combat-tracker li.combatant.player-combatant.directory-item.active
+.combat-tracker li.combatant.player-combatant.directory-item.active
 {
 	background: var(--color-bracket-pc-active-transparent);
 }
-#combat-tracker li.combatant.npc-combatant.directory-item.active
+.combat-tracker li.combatant.npc-combatant.directory-item.active
 {
 	background: var(--color-bracket-npc-active-transparent);
 }
-#combat-tracker li.combatant.active.directory-item
+.combat-tracker li.combatant.active.directory-item
 {
 	border-top-width: 1px;
 	border-bottom-width: 1px;
 }
 /* No top border on same-bracket combatants */
-#combat-tracker li.combatant.bracket-odd+li.combatant.bracket-odd:not(.active),
-#combat-tracker li.combatant.bracket-even+li.combatant.bracket-even:not(.active),
-#combat-tracker li.combatant.needs-roll+li.combatant.needs-roll:not(.active)
+.combat-tracker li.combatant.bracket-odd+li.combatant.bracket-odd:not(.active),
+.combat-tracker li.combatant.bracket-even+li.combatant.bracket-even:not(.active),
+.combat-tracker li.combatant.needs-roll+li.combatant.needs-roll:not(.active)
 {
 	border-top-width: 0;
 }
 /* Top border on different-bracket combatants */
-#combat-tracker li.combatant.bracket-even+li.combatant:not(.bracket-even),
-#combat-tracker li.combatant.bracket-odd+li.combatant:not(.bracket-odd)
+.combat-tracker li.combatant.bracket-even+li.combatant:not(.bracket-even),
+.combat-tracker li.combatant.bracket-odd+li.combatant:not(.bracket-odd)
 {
 	border-top-width: 2px;
 }
-#combat-tracker li.directory-item.bracket-divider
+.combat-tracker li.directory-item.bracket-divider
 {
 	line-height: 1.25rem;
 	text-align: center;
